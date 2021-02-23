@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace BlangParser
@@ -8,12 +9,6 @@ namespace BlangParser
     /// </summary>
     public class BlangFile
     {
-        /// <summary>
-        /// Store the string amount as bytes to avoid easily write them as big-endian
-        /// Too lazy to reimplement BinaryWriter for jut a big-endian value
-        /// </summary>
-        public byte[] StringAmountBytes;
-
         /// <summary>
         /// The strings in this file
         /// </summary>
@@ -43,7 +38,7 @@ namespace BlangParser
                     for (int i = 0; i < stringAmount; i++)
                     {
                         // Read string hash
-                        int hash = binaryReader.ReadInt32();
+                        uint hash = binaryReader.ReadUInt32();
 
                         // Read string identifier
                         int identifierBytes = binaryReader.ReadInt32();
@@ -66,7 +61,6 @@ namespace BlangParser
                         });
                     }
 
-                    blangFile.StringAmountBytes = stringAmountBytes;
                     blangFile.Strings = blangStrings;
                 }
             }
@@ -84,29 +78,73 @@ namespace BlangParser
             {
                 using (var binaryWriter = new BinaryWriter(fileStream))
                 {
-                    // Write string amount
-                    binaryWriter.Write(StringAmountBytes);
+                    // Delete invalid strings first
+                    // Strings must have a valid identifier
+                    for (int i = Strings.Count - 1; i >= 0; i--)
+                    {
+                        if (string.IsNullOrEmpty(Strings[i].Identifier) || string.IsNullOrWhiteSpace(Strings[i].Identifier))
+                        {
+                            Strings.RemoveAt(i);
+                        }
+                    }
+
+                    // Write string amount in big-endian
+                    byte[] stringsAmount = BitConverter.GetBytes(Strings.Count);
+                    Array.Reverse(stringsAmount);
+                    binaryWriter.Write(stringsAmount);
 
                     // Write each string
                     foreach (var blangString in Strings)
                     {
-                        // Write hash
+                        // Calculate the hash of the identifier string (FNV1A32)
+                        var identifierBytes = System.Text.Encoding.UTF8.GetBytes(blangString.Identifier.ToLowerInvariant());
+                        uint fnvPrime = 0x01000193;
+                        blangString.Hash = 0x811C9DC5;
+
+                        for (int i = 0; i < identifierBytes.Length; i++)
+                        {
+                            unchecked
+                            {
+                                blangString.Hash ^= identifierBytes[i];
+                                blangString.Hash *= fnvPrime;
+                            }
+                        }
+
+                        // Convert to little endian
+                        byte[] hashBytes = BitConverter.GetBytes(blangString.Hash);
+                        Array.Reverse(hashBytes);
+                        blangString.Hash = BitConverter.ToUInt32(hashBytes, 0);
+
+                        // Write the hash (little-endian)
                         binaryWriter.Write(blangString.Hash);
 
-                        // Write identifier
-                        var identifierBytes = System.Text.Encoding.UTF8.GetBytes(blangString.Identifier);
+                        // Write identifier (don't convert to lower-case this time)
+                        identifierBytes = System.Text.Encoding.UTF8.GetBytes(blangString.Identifier);
                         binaryWriter.Write(identifierBytes.Length);
                         binaryWriter.Write(identifierBytes);
 
                         // Write text
+                        // Null or empty strings are permitted
+                        if (string.IsNullOrEmpty(blangString.Text) || string.IsNullOrWhiteSpace(blangString.Text))
+                        {
+                            blangString.Text = "";
+                        }
+
                         var textBytes = System.Text.Encoding.UTF8.GetBytes(blangString.Text);
                         binaryWriter.Write(textBytes.Length);
                         binaryWriter.Write(textBytes);
 
                         // Write unknown data
-                        var unknownBytes = System.Text.Encoding.UTF8.GetBytes(blangString.Unknown);
-                        binaryWriter.Write(unknownBytes.Length);
-                        binaryWriter.Write(unknownBytes);
+                        if (string.IsNullOrEmpty(blangString.Unknown) || string.IsNullOrWhiteSpace(blangString.Unknown))
+                        {
+                            binaryWriter.Write(new byte[4]);
+                        }
+                        else
+                        {
+                            var unknownBytes = System.Text.Encoding.UTF8.GetBytes(blangString.Unknown);
+                            binaryWriter.Write(unknownBytes.Length);
+                            binaryWriter.Write(unknownBytes);
+                        }
                     }
                 }
             }

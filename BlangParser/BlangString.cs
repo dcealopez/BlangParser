@@ -8,7 +8,7 @@
         /// <summary>
         /// The string's hash
         /// </summary>
-        public int Hash { get; set; }
+        public uint Hash { get; set; }
 
         /// <summary>
         /// String identifier
