@@ -323,7 +323,7 @@ namespace BlangEditor
         /// <param name="e">event args</param>
         private void AboutItem_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("BlangEditor v1.1\nby proteh.\n\nGithub: https://github.com/dcealopez/",
+            MessageBox.Show("BlangEditor v1.2\nby proteh.\n\nGithub: https://github.com/dcealopez/",
                 "About BlangEditor",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
