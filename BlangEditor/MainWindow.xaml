@@ -34,7 +34,7 @@
                 <MenuItem Header="_File">
                     <MenuItem Header="_Open..." Name="OpenMenuItem" Command="Open" InputGestureText="Ctrl+O"/>
                     <MenuItem Header="_Save" Name="SaveMenuItem" Command="Save" IsEnabled="False" InputGestureText="Ctrl+S"/>
-                    <MenuItem Header="_Save As..." Name="SaveToMenuItem" Command="SaveAs" IsEnabled="False" InputGestureText="Ctrl+Shift+S"/>
+                    <MenuItem Header="Save _As..." Name="SaveToMenuItem" Command="SaveAs" IsEnabled="False" InputGestureText="Ctrl+Shift+S"/>
                     <MenuItem Header="_Close" Name="CloseMenuItem" Command="Close" IsEnabled="False" InputGestureText="Ctrl+W"/>
                     <Separator />
                     <MenuItem Header="_Exit" Name="ExitMenuItem" Command="New" IsEnabled="True" InputGestureText="Alt+F4"/>
@@ -57,10 +57,16 @@
                 <DataGridTextColumn Header="Identifier" Binding="{Binding Identifier, TargetNullValue=(enter an identifier name)}">
                 </DataGridTextColumn>
                 <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="*">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
                     <DataGridTextColumn.EditingElementStyle>
                         <Style TargetType="TextBox">
                             <Setter Property="TextWrapping" Value="Wrap" />
                             <EventSetter Event="KeyDown" Handler="OnTextBoxKeyDown"/>
+                            <Setter Property="AcceptsReturn" Value="true" />
                         </Style>
                     </DataGridTextColumn.EditingElementStyle>
                 </DataGridTextColumn>

@@ -10,6 +10,11 @@ namespace BlangParser
     public class BlangFile
     {
         /// <summary>
+        /// Unknown data
+        /// </summary>
+        public long UnknownData;
+
+        /// <summary>
         /// The strings in this file
         /// </summary>
         public List<BlangString> Strings;
@@ -29,10 +34,16 @@ namespace BlangParser
                 {
                     var blangStrings = new List<BlangString>();
 
-                    // Read the amount of strings (big-endian 32 bit integer)
+                    // Read unknown data (big-endian 64 bit integer)
                     fileStream.Seek(0x0, SeekOrigin.Begin);
+                    byte[] unknownDataBytes = binaryReader.ReadBytes(8);
+                    Array.Reverse(unknownDataBytes, 0, unknownDataBytes.Length);
+                    blangFile.UnknownData = BitConverter.ToInt32(unknownDataBytes, 0);
+
+                    // Read the amount of strings (big-endian 32 bit integer)
                     byte[] stringAmountBytes = binaryReader.ReadBytes(4);
-                    int stringAmount = (stringAmountBytes[0] << 24) | (stringAmountBytes[1] << 16) | (stringAmountBytes[2] << 8) | stringAmountBytes[3];
+                    Array.Reverse(stringAmountBytes, 0, stringAmountBytes.Length);
+                    int stringAmount = BitConverter.ToInt32(stringAmountBytes, 0);
 
                     // Parse each string
                     for (int i = 0; i < stringAmount; i++)
@@ -88,6 +99,11 @@ namespace BlangParser
                         }
                     }
 
+                    // Write unknown data in big-endian
+                    byte[] unknownDataBytes = BitConverter.GetBytes(UnknownData);
+                    Array.Reverse(unknownDataBytes);
+                    binaryWriter.Write(unknownDataBytes);
+
                     // Write string amount in big-endian
                     byte[] stringsAmount = BitConverter.GetBytes(Strings.Count);
                     Array.Reverse(stringsAmount);
@@ -129,6 +145,9 @@ namespace BlangParser
                         {
                             blangString.Text = "";
                         }
+
+                        // Remove carriage returns
+                        blangString.Text = blangString.Text.Replace("\r", "");
 
                         var textBytes = System.Text.Encoding.UTF8.GetBytes(blangString.Text);
                         binaryWriter.Write(textBytes.Length);

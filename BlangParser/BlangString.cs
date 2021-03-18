@@ -5,6 +5,7 @@
     /// </summary>
     public class BlangString
     {
+
         /// <summary>
         /// The string's hash
         /// </summary>
