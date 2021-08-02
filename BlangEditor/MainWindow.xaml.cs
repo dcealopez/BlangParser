@@ -109,16 +109,34 @@ namespace BlangEditor
 
                 try
                 {
-                    CurrentBlangFile = BlangFile.Parse(openFileDialog.FileName);
+                    // Attempt decrypting it first
+                    var blangFileBytes = File.ReadAllBytes(openFileDialog.FileName);
+                    var fileName = Path.GetFileName(openFileDialog.FileName);
+
+                    if (!fileName.EndsWith(".blang") && fileName.Contains(".blang"))
+                    {
+                        fileName = fileName.Substring(0, fileName.IndexOf(".blang") + 6);
+                    }
+
+                    var decryptedBlangFile = BlangDecrypt.IdCrypt(blangFileBytes, $"strings/{fileName}", true);
+                    CurrentBlangFile = BlangFile.ParseFromMemory(decryptedBlangFile);
                 }
                 catch (Exception)
                 {
-                    MessageBox.Show("Unsupported file format.",
-                        "Error while opening file",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                    try
+                    {
+                        // Attempt parsing it as if the file is already decrypted
+                        CurrentBlangFile = BlangFile.Parse(openFileDialog.FileName);
+                    }
+                    catch (Exception)
+                    {
+                        MessageBox.Show("Unsupported file format.",
+                            "Error while opening file",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
 
-                    return;
+                        return;
+                    }
                 }
 
                 // Create a backup of this file first
@@ -239,7 +257,18 @@ namespace BlangEditor
 
             try
             {
-                CurrentBlangFile.WriteTo(CurrentFilePath);
+                // Save the encrypted blang file
+                byte[] cryptDataBuffer = CurrentBlangFile.WriteToStream().ToArray();
+                var fileName = Path.GetFileName(CurrentFilePath);
+
+                if (!fileName.EndsWith(".blang") && fileName.Contains(".blang"))
+                {
+                    fileName = fileName.Substring(0, fileName.IndexOf(".blang") + 6);
+                }
+
+                var encryptedDataMemoryStream = BlangDecrypt.IdCrypt(cryptDataBuffer, $"strings/{fileName}", false);
+                File.WriteAllBytes(CurrentFilePath, encryptedDataMemoryStream.ToArray());
+
                 Title = $"{WindowTitle} - {CurrentFilePath}";
                 UnsavedChanges = false;
             }
@@ -323,7 +352,7 @@ namespace BlangEditor
         /// <param name="e">event args</param>
         private void AboutItem_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("BlangEditor v1.2\nby proteh.\n\nGithub: https://github.com/dcealopez/",
+            MessageBox.Show("BlangEditor v1.3\nby proteh.\n\nGithub: https://github.com/dcealopez/",
                 "About BlangEditor",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);

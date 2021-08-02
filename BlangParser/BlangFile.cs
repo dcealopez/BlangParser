@@ -177,7 +177,7 @@ namespace BlangParser
         public static BlangFile ParseFromMemory(MemoryStream memoryStream)
         {
             var blangFile = new BlangFile();
-            
+
             using (var binaryReader = new BinaryReader(memoryStream))
             {
                 var blangStrings = new List<BlangString>();
