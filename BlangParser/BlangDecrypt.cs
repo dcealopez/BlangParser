@@ -197,17 +197,13 @@ namespace BlangParser
                 {
                     ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
-                    using (MemoryStream msDecrypt = new MemoryStream(pbInput))
+                    using (MemoryStream msDecrypt = new MemoryStream())
                     {
-                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
                         {
-                            byte[] decryptedData = new byte[pbInput.Length];
-                            int bytesRead = csDecrypt.Read(decryptedData, 0, pbInput.Length);
-
-                            byte[] finalDecryptedData = new byte[bytesRead];
-                            Buffer.BlockCopy(decryptedData, 0, finalDecryptedData, 0, bytesRead);
-
-                            return finalDecryptedData;
+                            csDecrypt.Write(pbInput, 0, pbInput.Length);
+                            csDecrypt.FlushFinalBlock();
+                            return msDecrypt.ToArray();
                         }
                     }
                 }
